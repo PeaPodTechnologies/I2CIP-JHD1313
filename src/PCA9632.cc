@@ -96,17 +96,6 @@ i2cip_errorlevel_t PCA9632::setRGB(uint8_t r, uint8_t g, uint8_t b, bool setbus)
   return Device::writeRegister(fqa_rgb, PCA9632_REG_BLUE, b, false);
 }
 
-class StringStream : public Stream {
-  String* const str;
-  public:
-    StringStream(String* const s) : str(s) { }
-    int available(void) { return 0; }
-    int read(void) { return -1; }
-    int peek(void) { return 0; }
-    void flush(void) { }
-    size_t write(uint8_t c) { return str->concat((char)c); }
-};
-
 i2cip_errorlevel_t PCA9632::set(const String& buf_args, const i2cip_pca9632_args_t& args) {
   i2cip_errorlevel_t errlev = I2CIP_ERR_NONE;
   if(!initialized) {
@@ -139,11 +128,9 @@ i2cip_errorlevel_t PCA9632::set(const String& buf_args, const i2cip_pca9632_args
   #endif
   delayMicroseconds(PCA9632_DELAY_MICROS);
 
-  String buf = String("[I2CIP] HELLO!\n"); // hardcode failsafe
+  String buf = String("[I2CIP] HELLO!\n") + fqaToString(this->fqa); // hardcode failsafe
   // String buf = String(buf_args.c_str()); // Copy
-  StringStream buf_stream(&buf);
   // if(buf_stream.write('\n') != 1) { return I2CIP_ERR_SOFT; }
-  printFQA(this->fqa, buf_stream);
   size_t len = buf.length(); // strlen(buf);
   if(len <= 0) return I2CIP_ERR_SOFT;
   if(len > PCA9632_TXMAX) {
