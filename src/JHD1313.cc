@@ -1,6 +1,6 @@
 #include "JHD1313.h"
 
-#include <debug.h>
+// #include <debug.h>
 
 #ifndef JHD1313_ENABLE_CURSOR
 #define JHD1313_ENABLE_CURSOR false
