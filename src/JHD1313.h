@@ -58,8 +58,10 @@
 #define JHD1313_ROW2 (uint8_t)0xc0
 
 // Device I2C Arress
-#define I2CIP_JHD1313_ADDRESS     0x3e
-#define JHD1313_ADDRESS_RGBLED     0x62
+ // 0x3E
+#define I2CIP_JHD1313_ADDRESS     62
+ // 0x62
+#define JHD1313_ADDRESS_RGBLED     98
 // #define RGB_ADDRESS_V5  (0x30)
 #define JHD1313_ROWS 2
 #define JHD1313_COLS 16

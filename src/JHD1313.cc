@@ -1,5 +1,9 @@
 #include "JHD1313.h"
 
+#ifndef I2CIP_H_
+#error "I2CIP must be in I2CIP-JHD1313/libs, or, adjacent to I2CIP-JHD1313 together in $PWD/libs"
+#else
+
 // #include <debug.h>
 
 #ifndef JHD1313_ENABLE_CURSOR
@@ -102,7 +106,7 @@ i2cip_errorlevel_t JHD1313::setRGB(uint8_t r, uint8_t g, uint8_t b, bool setbus)
 
 i2cip_errorlevel_t JHD1313::set(const String& buf_args, const i2cip_jhd1313_args_t& args) {
   i2cip_errorlevel_t errlev = I2CIP_ERR_NONE;
-  if(!this->initialized) {
+  // if(!this->initialized) {
     delayMicroseconds(50000); // Wakeup delay
     errlev = begin(JHD1313_COLS, JHD1313_ROWS, false);
     I2CIP_ERR_BREAK(errlev);
@@ -112,9 +116,9 @@ i2cip_errorlevel_t JHD1313::set(const String& buf_args, const i2cip_jhd1313_args
       I2CIP_DEBUG_SERIAL.println(F("[JHD1313 | SET] INIT PASS"));
       DEBUG_DELAY();
     #endif
-    this->initialized = true; // Comment out to always begin
+    // this->initialized = true; // Comment out to always begin
     delayMicroseconds(JHD1313_DELAY_MICROS);
-  }
+  // }
   // Clear
   errlev = writeRegister(JHD1313_REG_MODE, JHD1313_CLEARDISPLAY, false);
   if(errlev != I2CIP_ERR_NONE) { this->initialized = false; return errlev; }
@@ -228,3 +232,5 @@ size_t JHD1313::write(uint8_t b) {
   delayMicroseconds(JHD1313_DELAY_MICROS);
   return r;
 }
+
+#endif
