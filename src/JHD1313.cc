@@ -15,6 +15,7 @@
 #endif
 
 #define JHD1313_FAILSAFE_ARGS { .r = 0x3F, .g = 0xFF, .b = 0x3F } // White
+#define JHD1313_WRITE_RETRIES 3 // Should be enough
 
 I2CIP_DEVICE_INIT_STATIC_ID(JHD1313);
 I2CIP_OUTPUT_INIT_FAILSAFE(JHD1313, String, String("[I2CIP] HELLO!"), i2cip_jhd1313_args_t, JHD1313_FAILSAFE_ARGS);
@@ -136,13 +137,17 @@ i2cip_errorlevel_t JHD1313::set(const String& buf_args, const i2cip_jhd1313_args
   #endif
   delayMicroseconds(JHD1313_DELAY_MICROS);
 
-  String buf = String("[I2CIP] HELLO :D\n") + fqaToString(this->fqa); // hardcode failsafe
+  String buf = String("[I2CIP] HELLO :D\n") + fqaToString(fqa); // hardcode failsafe
   // String buf = String(buf_args.c_str()); // Copy
   // if(buf_stream.write('\n') != 1) { return I2CIP_ERR_SOFT; }
   size_t len = buf_args.length(); // strlen(buf);
   if(len > 0) buf = buf_args;
   if(len > JHD1313_TXMAX) {
     len = JHD1313_TXMAX;
+  } else if(len < JHD1313_TXMAX) {
+    while(buf.length() < JHD1313_TXMAX) {
+      buf += ' '; // This will clear the rest of the screen instead of calling clearDisplay
+    }
   }
 
   #ifdef I2CIP_DEBUG_SERIAL
@@ -153,7 +158,7 @@ i2cip_errorlevel_t JHD1313::set(const String& buf_args, const i2cip_jhd1313_args
     DEBUG_DELAY();
   #endif
   
-  return print(buf) > 0 ? I2CIP_ERR_NONE : I2CIP_ERR_SOFT;
+  return print(buf) > 0 ? I2CIP_ERR_NONE : (MUX::pingMUX(fqa) ? I2CIP_ERR_SOFT : I2CIP_ERR_HARD);
 
   // uint8_t s = 0; // row shift
   // #ifdef I2CIP_DEBUG_SERIAL
@@ -218,18 +223,25 @@ i2cip_errorlevel_t JHD1313::set(const String& buf_args, const i2cip_jhd1313_args
 }
 
 size_t JHD1313::write(uint8_t b) {
-  size_t r = 0;
+  size_t r = 0; uint8_t c = 0;
   switch(b) {
     case '\0':
       return 1; // NOP here is OK
     case '\n':
-      r = (setCursor(0, 1, false) == I2CIP_ERR_NONE ? 1 : 0); // Hard-coded Line 2 Set
+      while(r == 0 && c < JHD1313_WRITE_RETRIES) {
+        c++;
+        r = (setCursor(0, 1, false) == I2CIP_ERR_NONE ? 1 : 0); // Hard-coded Line 2 Set
+        delayMicroseconds(JHD1313_DELAY_MICROS);
+      }
       break;
     default:
-      r = (writeRegister(JHD1313_REG_DATA, b, false) == I2CIP_ERR_NONE ? 1 : 0);
+      while(r == 0 && c < JHD1313_WRITE_RETRIES) {
+        c++;
+        r = (writeRegister(JHD1313_REG_DATA, b, false) == I2CIP_ERR_NONE ? 1 : 0);
+        delayMicroseconds(JHD1313_DELAY_MICROS);
+      }
       break;
   }
-  delayMicroseconds(JHD1313_DELAY_MICROS);
   return r;
 }
 
