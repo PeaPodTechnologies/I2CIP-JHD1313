@@ -14,11 +14,11 @@
 #define JHD1313_ENABLE_BLINK false
 #endif
 
-#define JHD1313_FAILSAFE_ARGS { .r = 0x3F, .g = 0xFF, .b = 0x3F } // White
+#define JHD1313_FAILSAFE_ARGS { .r = 0xFF, .g = 0xFF, .b = 0xFF } // White
 #define JHD1313_WRITE_RETRIES 3 // Should be enough
 
 I2CIP_DEVICE_INIT_STATIC_ID(JHD1313);
-I2CIP_OUTPUT_INIT_FAILSAFE(JHD1313, String, String("[I2CIP] HELLO!"), i2cip_jhd1313_args_t, JHD1313_FAILSAFE_ARGS);
+I2CIP_OUTPUT_INIT_FAILSAFE(JHD1313, String, "", i2cip_jhd1313_args_t, JHD1313_FAILSAFE_ARGS); // Default to just updating RGB
 
 // bool JHD1313::_failsafe_set = false;
 // char JHD1313::_failsafe[JHD1313_TXMAX] = {"I2CIP\nBLANK"};
@@ -26,56 +26,58 @@ I2CIP_OUTPUT_INIT_FAILSAFE(JHD1313, String, String("[I2CIP] HELLO!"), i2cip_jhd1
 
 using namespace I2CIP;
 
-JHD1313::JHD1313(i2cip_fqa_t fqa, const i2cip_id_t& id) : Device(fqa, id), OutputInterface<String, i2cip_jhd1313_args_t>((Device*)this), Print(), fqa_rgb(createFQA(I2CIP_FQA_SEG_I2CBUS(fqa), I2CIP_FQA_SEG_MODULE(fqa), I2CIP_FQA_SEG_MUXBUS(fqa), JHD1313_ADDRESS_RGBLED)) { }
+JHD1313::JHD1313(i2cip_fqa_t fqa, const i2cip_id_t& id) : Device(fqa, id), OutputInterface<String, i2cip_jhd1313_args_t>((Device*)this), Print() { }
 // JHD1313::JHD1313(i2cip_fqa_t fqa, const i2cip_id_t& id) : Device(fqa, id), OutputInterface<const char*, i2cip_jhd1313_args_t>((Device*)this), fqa_rgb(createFQA(I2CIP_FQA_SEG_I2CBUS(fqa), I2CIP_FQA_SEG_MODULE(fqa), I2CIP_FQA_SEG_MUXBUS(fqa), JHD1313_ADDRESS_RGBLED)) { }
 
 using namespace I2CIP;
 
-i2cip_errorlevel_t JHD1313::begin(uint8_t cols, uint8_t rows, bool setbus) {
-  if(cols > JHD1313_COLS || rows > JHD1313_ROWS) {
-    return I2CIP_ERR_SOFT;
-  }
+i2cip_errorlevel_t JHD1313::begin(bool setbus) { return JHD1313::_begin(this->fqa, setbus); }
+i2cip_errorlevel_t JHD1313::_begin(const i2cip_fqa_t& fqa, bool setbus) {
+  // Serial.println("LCD BEGIN");
+  delayMicroseconds(50000); // Wakeup delay
 
   i2cip_errorlevel_t errlev; // uint8_t c = 0;
   // do{
   //   c++;
-    errlev = writeRegister(JHD1313_REG_MODE, JHD1313_FUNCTIONSET | (JHD1313_ROWS == 2 ? JHD1313_2LINE : JHD1313_1LINE), setbus); // & c == 0); // Only the first time
+    errlev = Device::writeRegister(fqa, (uint8_t)JHD1313_REG_MODE, (uint8_t)(JHD1313_FUNCTIONSET | (JHD1313_ROWS == 2 ? JHD1313_2LINE : JHD1313_1LINE)), setbus); // & c == 0); // Only the first time
     // delayMicroseconds(c == 0 ? 4500 : 150);
   // } while(c < 3); // Don't know why exactly but we ought to do this 3 times
   I2CIP_ERR_BREAK(errlev);
     delayMicroseconds(4500);
 
-  errlev = writeRegister(JHD1313_REG_MODE, JHD1313_FUNCTIONSET | (JHD1313_ROWS == 2 ? JHD1313_2LINE : JHD1313_1LINE), false);
+  errlev = Device::writeRegister(fqa, (uint8_t)JHD1313_REG_MODE, (uint8_t)(JHD1313_FUNCTIONSET | (JHD1313_ROWS == 2 ? JHD1313_2LINE : JHD1313_1LINE)), false);
   I2CIP_ERR_BREAK(errlev);
   delayMicroseconds(150);
 
-  errlev = writeRegister(JHD1313_REG_MODE, JHD1313_FUNCTIONSET | (JHD1313_ROWS == 2 ? JHD1313_2LINE : JHD1313_1LINE), false);
+  errlev = Device::writeRegister(fqa, (uint8_t)JHD1313_REG_MODE, (uint8_t)(JHD1313_FUNCTIONSET | (JHD1313_ROWS == 2 ? JHD1313_2LINE : JHD1313_1LINE)), false);
   I2CIP_ERR_BREAK(errlev);
 
-  errlev = writeRegister(JHD1313_REG_MODE, JHD1313_FUNCTIONSET | (JHD1313_ROWS == 2 ? JHD1313_2LINE : JHD1313_1LINE), false);
+  errlev = Device::writeRegister(fqa, (uint8_t)JHD1313_REG_MODE, (uint8_t)(JHD1313_FUNCTIONSET | (JHD1313_ROWS == 2 ? JHD1313_2LINE : JHD1313_1LINE)), false);
   I2CIP_ERR_BREAK(errlev);
 
   // DISPLAY
   // errlev = writeRegister(JHD1313_REG_MODE, JHD1313_DISPLAYCONTROL | JHD1313_DISPLAYON | (JHD1313_ENABLE_CURSOR ? JHD1313_CURSORON : JHD1313_CURSOROFF) | (JHD1313_ENABLE_BLINK ? JHD1313_BLINKON : JHD1313_BLINKOFF), false);
-  errlev = writeRegister(JHD1313_REG_MODE, JHD1313_DISPLAYCONTROL | JHD1313_DISPLAYON | JHD1313_CURSORON, false);
+  errlev = Device::writeRegister(fqa, (uint8_t)JHD1313_REG_MODE, (uint8_t)(JHD1313_DISPLAYCONTROL | JHD1313_DISPLAYON | JHD1313_CURSORON), false);
+  errlev = Device::writeRegister(fqa, (uint8_t)JHD1313_REG_MODE, (uint8_t)(JHD1313_DISPLAYCONTROL | JHD1313_DISPLAYON | JHD1313_CURSOROFF), false);
   I2CIP_ERR_BREAK(errlev);
   delayMicroseconds(JHD1313_DELAY_MICROS);
 
   // // CLEAR
-  errlev = writeRegister(JHD1313_REG_MODE, JHD1313_CLEARDISPLAY, false);
+  errlev = Device::writeRegister(fqa, (uint8_t)JHD1313_REG_MODE, (uint8_t)JHD1313_CLEARDISPLAY, false);
   I2CIP_ERR_BREAK(errlev);
   delayMicroseconds(JHD1313_DELAY_MICROS);
 
   // ENTRY MODE L TO R
-  errlev = writeRegister(JHD1313_REG_MODE, JHD1313_ENTRYMODESET | JHD1313_ENTRYLEFT | JHD1313_ENTRYSHIFTDECREMENT, false);
+  errlev = Device::writeRegister(fqa, (uint8_t)JHD1313_REG_MODE, (uint8_t)(JHD1313_ENTRYMODESET | JHD1313_ENTRYLEFT | JHD1313_ENTRYSHIFTDECREMENT), false);
   I2CIP_ERR_BREAK(errlev);
   delayMicroseconds(JHD1313_DELAY_MICROS);
 
-  errlev = writeRegister(JHD1313_REG_MODE, JHD1313_RETURNHOME, false);
+  errlev = Device::writeRegister(fqa, (uint8_t)JHD1313_REG_MODE, (uint8_t)JHD1313_RETURNHOME, false);
   I2CIP_ERR_BREAK(errlev);
   delayMicroseconds(JHD1313_DELAY_MICROS);
 
   // RGB
+  i2cip_fqa_t fqa_rgb = createFQA(I2CIP_FQA_SEG_I2CBUS(fqa), I2CIP_FQA_SEG_MODULE(fqa), I2CIP_FQA_SEG_MUXBUS(fqa), JHD1313_ADDRESS_RGBLED);
   errlev = Device::writeRegister(fqa_rgb, (uint8_t)0x0, (uint8_t)0x0, false); // Backlight
   I2CIP_ERR_BREAK(errlev);
   // set LEDs controllable by both PWM and GRPPWM registers
@@ -87,17 +89,20 @@ i2cip_errorlevel_t JHD1313::begin(uint8_t cols, uint8_t rows, bool setbus) {
   // return errlev;
 }
 
-i2cip_errorlevel_t JHD1313::setCursor(uint8_t col, uint8_t row, bool setbus) {
+i2cip_errorlevel_t JHD1313::setCursor(const uint8_t& col, const uint8_t& row, bool setbus) { return this->_setCursor(this->fqa, col, row, setbus); }
+i2cip_errorlevel_t JHD1313::_setCursor(const i2cip_fqa_t& fqa, const uint8_t& col, const uint8_t& row, bool setbus) {
   // if(!this->initialized) return I2CIP_ERR_SOFT;
   if(col > JHD1313_COLS || row > JHD1313_ROWS) {
     return I2CIP_ERR_SOFT;
   }
   uint8_t b = (row == 0 ? (col | JHD1313_ROW1) : (col | (JHD1313_ROW2)));
-  return writeRegister(JHD1313_REG_MODE, b, setbus);
+  return Device::writeRegister(fqa, JHD1313_REG_MODE, b, setbus);
 }
 
-i2cip_errorlevel_t JHD1313::setRGB(uint8_t r, uint8_t g, uint8_t b, bool setbus) {
+i2cip_errorlevel_t JHD1313::setRGB(const uint8_t& r, const uint8_t& g, const uint8_t& b, bool setbus) { return this->_setRGB(this->fqa, r, g, b, setbus); }
+i2cip_errorlevel_t JHD1313::_setRGB(const i2cip_fqa_t& fqa, const uint8_t& r, const uint8_t& g, const uint8_t& b, bool setbus) {
   // if(!this->initialized) return I2CIP_ERR_SOFT;
+  i2cip_fqa_t fqa_rgb = createFQA(I2CIP_FQA_SEG_I2CBUS(fqa), I2CIP_FQA_SEG_MODULE(fqa), I2CIP_FQA_SEG_MUXBUS(fqa), JHD1313_ADDRESS_RGBLED);
   i2cip_errorlevel_t errlev = Device::writeRegister(fqa_rgb, JHD1313_REG_RED, r, setbus);
   I2CIP_ERR_BREAK(errlev);
   errlev = Device::writeRegister(fqa_rgb, JHD1313_REG_GREEN, g, false);
@@ -105,43 +110,58 @@ i2cip_errorlevel_t JHD1313::setRGB(uint8_t r, uint8_t g, uint8_t b, bool setbus)
   return Device::writeRegister(fqa_rgb, JHD1313_REG_BLUE, b, false);
 }
 
-i2cip_errorlevel_t JHD1313::set(const String& buf_args, const i2cip_jhd1313_args_t& args) {
+i2cip_errorlevel_t JHD1313::set(const String& _buf, const i2cip_jhd1313_args_t& args) {
   i2cip_errorlevel_t errlev = I2CIP_ERR_NONE;
-  // if(!this->initialized) {
-    delayMicroseconds(50000); // Wakeup delay
-    errlev = begin(JHD1313_COLS, JHD1313_ROWS, false);
-    I2CIP_ERR_BREAK(errlev);
-
-    #ifdef I2CIP_DEBUG_SERIAL
-      DEBUG_DELAY();
-      I2CIP_DEBUG_SERIAL.println(F("[JHD1313 | SET] INIT PASS"));
-      DEBUG_DELAY();
-    #endif
-    // this->initialized = true; // Comment out to always begin
-    delayMicroseconds(JHD1313_DELAY_MICROS);
+  // if(!this->ready) {
+  //   errlev = this->begin();
+  //   I2CIP_ERR_BREAK(errlev);
   // }
-  // Clear
-  errlev = writeRegister(JHD1313_REG_MODE, JHD1313_CLEARDISPLAY, false);
-  if(errlev != I2CIP_ERR_NONE) { this->initialized = false; return errlev; }
+  if(!this->ready) {
+    return I2CIP_ERR_SOFT;
+  }
+
+  // SET RGB
+  errlev = setRGB(args.r, args.g, args.b, false);
+  I2CIP_ERR_BREAK(errlev);
   delayMicroseconds(JHD1313_DELAY_MICROS);
 
-  errlev = setRGB(args.r, args.g, args.b, false);
-  if(errlev != I2CIP_ERR_NONE) { this->initialized = false; return errlev; }
-
-  errlev = setCursor(0, 0, false);
-  if(errlev != I2CIP_ERR_NONE) { this->initialized = false; return errlev; }
   #ifdef I2CIP_DEBUG_SERIAL
     DEBUG_DELAY();
-    I2CIP_DEBUG_SERIAL.println(F("[JHD1313 | SET] SCREEN CLEAR; RGB SET; CURSOR RESET; PASS"));
+    I2CIP_DEBUG_SERIAL.println(F("[JHD1313 | SET] SCREEN CLEAR; RGB SET"));
     DEBUG_DELAY();
   #endif
+
+
+  // if(buf_stream.write('\n') != 1) { return I2CIP_ERR_SOFT; }
+  size_t len = _buf.length(); // strlen(buf);
+  if(len == 0 || _buf.equals(this->getValue())) { return I2CIP_ERR_NONE; } // RGB only; either it's already been written or there's nothing to write
+
+  errlev = writeRegister(JHD1313_REG_MODE, JHD1313_CLEARDISPLAY, true);
+  I2CIP_ERR_BREAK(errlev);
   delayMicroseconds(JHD1313_DELAY_MICROS);
 
-  String buf = String("[I2CIP] HELLO :D\n") + fqaToString(fqa); // hardcode failsafe
-  // String buf = String(buf_args.c_str()); // Copy
-  // if(buf_stream.write('\n') != 1) { return I2CIP_ERR_SOFT; }
-  size_t len = buf_args.length(); // strlen(buf);
-  if(len > 0) buf = buf_args;
+  // Write buffer
+  errlev = setCursor(0, 0, false);
+  I2CIP_ERR_BREAK(errlev);
+  delayMicroseconds(JHD1313_DELAY_MICROS);
+  
+  // Copy buffer
+  String buf = String();
+  for(size_t i = 0; i < len; i++) {
+    buf += _buf.charAt(i);
+  }
+
+  // Pad newline with spaces to force clear
+  uint8_t nl = buf.indexOf('\n');
+  if(nl != -1 && nl < JHD1313_COLS) {
+    uint8_t pad = JHD1313_COLS - nl;
+    String temp = buf.substring(nl);
+    buf = buf.substring(0, nl);
+    for(uint8_t i = 0; i < pad; i++) {
+      buf += ' ';
+    }
+    buf += temp;
+  }
   if(len > JHD1313_TXMAX) {
     len = JHD1313_TXMAX;
   } else if(len < JHD1313_TXMAX) {
@@ -152,13 +172,16 @@ i2cip_errorlevel_t JHD1313::set(const String& buf_args, const i2cip_jhd1313_args
 
   #ifdef I2CIP_DEBUG_SERIAL
     DEBUG_DELAY();
-    I2CIP_DEBUG_SERIAL.print(F("[JHD1313 | SET] PRINT ARGS '"));
+    I2CIP_DEBUG_SERIAL.print(F("[JHD1313 | SET] PRINT ARGS["));
+    I2CIP_DEBUG_SERIAL.print(len);
+    I2CIP_DEBUG_SERIAL.print(F("] '"));
     I2CIP_DEBUG_SERIAL.print(buf);
     I2CIP_DEBUG_SERIAL.println(F("'"));
     DEBUG_DELAY();
   #endif
   
-  return print(buf) > 0 ? I2CIP_ERR_NONE : (MUX::pingMUX(fqa) ? I2CIP_ERR_SOFT : I2CIP_ERR_HARD);
+  // return print(buf) > 0 ? I2CIP_ERR_NONE : (MUX::pingMUX(fqa) ? I2CIP_ERR_SOFT : I2CIP_ERR_HARD);
+  return print(buf) == buf.length() ? I2CIP_ERR_NONE : (MUX::pingMUX(fqa) ? I2CIP_ERR_SOFT : I2CIP_ERR_HARD);
 
   // uint8_t s = 0; // row shift
   // #ifdef I2CIP_DEBUG_SERIAL
@@ -226,16 +249,18 @@ size_t JHD1313::write(uint8_t b) {
   size_t r = 0; uint8_t c = 0;
   switch(b) {
     case '\0':
+    case '\r':
+    case '\t':
       return 1; // NOP here is OK
     case '\n':
-      while(r == 0 && c < JHD1313_WRITE_RETRIES) {
+      while(r == 0 && c < 10) { // Many retries here is OK
         c++;
-        r = (setCursor(0, 1, false) == I2CIP_ERR_NONE ? 1 : 0); // Hard-coded Line 2 Set
+        r = (setCursor(0, 1, false) == I2CIP_ERR_NONE ? 1 : 0);
         delayMicroseconds(JHD1313_DELAY_MICROS);
       }
       break;
     default:
-      while(r == 0 && c < JHD1313_WRITE_RETRIES) {
+      while(r == 0 && c < JHD1313_WRITE_RETRIES) { // Fewer retries; multiples
         c++;
         r = (writeRegister(JHD1313_REG_DATA, b, false) == I2CIP_ERR_NONE ? 1 : 0);
         delayMicroseconds(JHD1313_DELAY_MICROS);

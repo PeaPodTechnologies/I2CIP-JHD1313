@@ -85,13 +85,10 @@ class JHD1313 : public I2CIP::Device, public I2CIP::OutputInterface<String, i2ci
   I2CIP_OUTPUT_USE_FAILSAFE(String, i2cip_jhd1313_args_t);
   private:
     // JHD1313(i2cip_fqa_t fqa) : I2CIP::Device(fqa, i2cip_jhd1313_id_progmem, _id), I2CIP::OutputInterface<uint8_t*, size_t>((I2CIP::Device*)this) { }
-    bool initialized = false;
 
-    const i2cip_fqa_t fqa_rgb;
-
-    i2cip_errorlevel_t begin(uint8_t cols, uint8_t rows, bool setbus = false);
-    i2cip_errorlevel_t setCursor(uint8_t col, uint8_t row, bool setbus = false);
-    i2cip_errorlevel_t setRGB(uint8_t r, uint8_t g, uint8_t b, bool setbus = false);
+    i2cip_errorlevel_t begin(bool setbus = true) override; // virtual Device::begin
+    i2cip_errorlevel_t setCursor(const uint8_t& col, const uint8_t& row, bool setbus = false);
+    i2cip_errorlevel_t setRGB(const uint8_t& r, const uint8_t& g, const uint8_t& b, bool setbus = false);
     
     JHD1313(i2cip_fqa_t fqa, const i2cip_id_t& id);
 
@@ -100,6 +97,9 @@ class JHD1313 : public I2CIP::Device, public I2CIP::OutputInterface<String, i2ci
 
     i2cip_errorlevel_t set(const String& buf, const i2cip_jhd1313_args_t& len);
     // i2cip_errorlevel_t set(const char* const& buf, const i2cip_jhd1313_args_t& len);
+    static i2cip_errorlevel_t _begin(const i2cip_fqa_t& fqa, const bool setbus = false);
+    static i2cip_errorlevel_t _setCursor(const i2cip_fqa_t& fqa, const uint8_t& col, const uint8_t& row, const bool setbus = false);
+    static i2cip_errorlevel_t _setRGB(const i2cip_fqa_t& fqa, const uint8_t& r, const uint8_t& g, const uint8_t& b, bool setbus = false);
 };
 
 #endif
