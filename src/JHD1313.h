@@ -83,6 +83,7 @@ typedef struct {
 class JHD1313 : public I2CIP::Device, public I2CIP::OutputInterface<String, i2cip_jhd1313_args_t>, private Print {
   I2CIP_DEVICE_CLASS_BUNDLE(JHD1313);
   I2CIP_OUTPUT_USE_FAILSAFE(String, i2cip_jhd1313_args_t);
+  I2CIP_OUTPUT_USE_TOSTRING(String, "%s", value.c_str());
   private:
     // JHD1313(i2cip_fqa_t fqa) : I2CIP::Device(fqa, i2cip_jhd1313_id_progmem, _id), I2CIP::OutputInterface<uint8_t*, size_t>((I2CIP::Device*)this) { }
 
@@ -94,7 +95,6 @@ class JHD1313 : public I2CIP::Device, public I2CIP::OutputInterface<String, i2ci
 
     virtual size_t write(uint8_t b) override;
   public:
-
     i2cip_errorlevel_t set(const String& buf, const i2cip_jhd1313_args_t& len);
     // i2cip_errorlevel_t set(const char* const& buf, const i2cip_jhd1313_args_t& len);
     static i2cip_errorlevel_t _begin(const i2cip_fqa_t& fqa, const bool setbus = false);
