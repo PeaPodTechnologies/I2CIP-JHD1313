@@ -270,4 +270,30 @@ size_t JHD1313::write(uint8_t b) {
   return r;
 }
 
+i2cip_jhd1313_args_t JHD1313::randomRGBLCD(void) {
+  uint32_t lcdrgb = random(0, 0xFFFFFF); // Random color
+  // Serial.print("Random RGB: 0x"); Serial.println(lcdrgb, HEX);
+  uint8_t red = ((lcdrgb >> 16) & 0xFF); uint8_t green = ((lcdrgb >> 8) & 0xFF); uint8_t blue = (lcdrgb & 0xFF); // Extract RGB
+
+  // float brightness = (float)lcdrgb / 0xFFFFFF; // Normal Brightness
+  float brightness = (red / (float)0xFF) * 0.299f + (green / (float)0xFF) * 0.587f + (blue / (float)0xFF) * 0.114f; // Relative Spectral Luminance
+  float _scale = I2CIP_JHD1313_BRIGHTNESS / brightness; // Raw scalings
+
+  float _red = _scale * red / 255.f; float _green = _scale * green / 255.f; float _blue = _scale * blue / 255.f; // Normalize
+  float scale = 1.f / max(1.f, max(_red, max(_green, _blue))); // Adjusted scaling
+
+  red = (uint8_t)min(255.f, _red * scale * 255);
+  green = (uint8_t)min(255.f, _green * scale * 255);
+  blue = (uint8_t)min(255.f, _blue * scale * 255);
+  // Serial.print("LCD RGB: 0x");
+  // if(red < 0x10) Serial.print('0');
+  // Serial.print(red, HEX);
+  // if(green < 0x10) Serial.print('0');
+  // Serial.print(green, HEX);
+  // if(blue < 0x10) Serial.print('0');
+  // Serial.println(blue, HEX);
+  i2cip_jhd1313_args_t lcdargs = { .r = red, .g = green, .b = blue };
+  return lcdargs;
+}
+
 #endif

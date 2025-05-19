@@ -71,6 +71,7 @@
 #define JHD1313_ENABLE_BLINK true // Uncomment to enable cursor blinking
 
 #define JHD1313_DELAY_MICROS 2000
+#define I2CIP_JHD1313_BRIGHTNESS 0.65f // Keep it low for good contrast and readability
 
 // const char i2cip_jhd1313_id_progmem[] PROGMEM = {"JHD1313"};
 
@@ -100,6 +101,8 @@ class JHD1313 : public I2CIP::Device, public I2CIP::OutputInterface<String, i2ci
     static i2cip_errorlevel_t _begin(const i2cip_fqa_t& fqa, const bool setbus = false);
     static i2cip_errorlevel_t _setCursor(const i2cip_fqa_t& fqa, const uint8_t& col, const uint8_t& row, const bool setbus = false);
     static i2cip_errorlevel_t _setRGB(const i2cip_fqa_t& fqa, const uint8_t& r, const uint8_t& g, const uint8_t& b, bool setbus = false);
+
+    static i2cip_jhd1313_args_t randomRGBLCD(void);
 };
 
 #endif
