@@ -26,6 +26,25 @@ I2CIP_OUTPUT_INIT_FAILSAFE(JHD1313, String, "", i2cip_jhd1313_args_t, JHD1313_FA
 
 using namespace I2CIP;
 
+void JHD1313::parseJSONArgs(I2CIP::i2cip_args_io_t& argsDest, JsonVariant argsA, JsonVariant argsS, JsonVariant argsB) {
+  // Case: String (char[4] cast to uint32_t)
+  if(argsB.is<int>()) {
+    int rgb = argsB.as<int>();
+    if(rgb >= 0 && rgb <= 0xFFFFFF) {
+      argsDest.b = new i2cip_jhd1313_args_t{ .r = (uint8_t)((rgb >> 16) & 0xFF), .g = (uint8_t)((rgb >> 8) & 0xFF), .b = (uint8_t)(rgb & 0xFF) };
+    }
+  }
+  if(!argsS.isNull()) {
+    // This works for any argsS, even null
+    argsDest.s = new String(argsS.as<String>());
+  }
+}
+
+void JHD1313::deleteArgs(I2CIP::i2cip_args_io_t& args) {
+  delete((String*)args.s);
+  delete((i2cip_jhd1313_args_t*)args.b);
+}
+
 JHD1313::JHD1313(i2cip_fqa_t fqa, const i2cip_id_t& id) : Device(fqa, id), OutputInterface<String, i2cip_jhd1313_args_t>((Device*)this), Print() { }
 // JHD1313::JHD1313(i2cip_fqa_t fqa, const i2cip_id_t& id) : Device(fqa, id), OutputInterface<const char*, i2cip_jhd1313_args_t>((Device*)this), fqa_rgb(createFQA(I2CIP_FQA_SEG_I2CBUS(fqa), I2CIP_FQA_SEG_MODULE(fqa), I2CIP_FQA_SEG_MUXBUS(fqa), JHD1313_ADDRESS_RGBLED)) { }
 
